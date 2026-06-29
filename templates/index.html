@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Brain Tumor Classification</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css"/>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Segoe UI',sans-serif;background:#0D1117;color:#E6EDF3;min-height:100vh}
+header{background:#161B22;padding:20px 40px;border-bottom:1px solid #30363D;text-align:center}
+header h1{font-size:22px;font-weight:600;color:#E6EDF3;margin-bottom:4px;display:flex;align-items:center;justify-content:center;gap:10px}
+.brain-icon{width:36px;height:36px;background:#1c2333;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;border:1px solid #30363D}
+.brain-icon i{font-size:18px;color:#58A6FF}
+header p{font-size:13px;color:#8B949E}
+.container{max-width:860px;margin:30px auto;padding:0 20px}
+.card{background:#161B22;border:1px solid #30363D;border-radius:12px;padding:22px;margin-bottom:16px}
+.card-label{font-size:11px;color:#8B949E;text-transform:uppercase;letter-spacing:1px;margin-bottom:14px;display:flex;align-items:center;gap:6px}
+.card-label i{font-size:15px}
+.upload-zone{border:1.5px dashed #30363D;border-radius:10px;padding:44px 24px;text-align:center;cursor:pointer;transition:all .2s;position:relative}
+.upload-zone:hover{border-color:#58A6FF;background:#1c2333}
+.upload-zone input{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%}
+.upload-zone i.scan-icon{font-size:36px;color:#8B949E;margin-bottom:10px;display:block}
+.upload-zone h3{font-size:14px;font-weight:500;color:#E6EDF3;margin-bottom:4px}
+.upload-zone p{font-size:12px;color:#8B949E}
+.preview-wrap{display:none;margin-top:14px;align-items:center;gap:12px;padding:10px 14px;background:#21262D;border-radius:8px;border:1px solid #30363D}
+.preview-wrap img{width:56px;height:56px;object-fit:cover;border-radius:6px;border:1px solid #30363D}
+.preview-info{flex:1}
+.preview-name{font-size:13px;font-weight:500;color:#E6EDF3}
+.preview-size{font-size:12px;color:#8B949E}
+.predict-btn{width:100%;padding:13px;background:#238636;border:none;border-radius:10px;color:#fff;font-size:14px;font-weight:600;cursor:pointer;transition:all .2s;margin-bottom:16px;display:flex;align-items:center;justify-content:center;gap:8px}
+.predict-btn:hover{background:#2ea043}
+.predict-btn:disabled{opacity:.4;cursor:not-allowed}
+.spinner-wrap{text-align:center;padding:2.5rem;display:none}
+.spinner{width:40px;height:40px;border:3px solid #30363D;border-top-color:#58A6FF;border-radius:50%;animation:spin 1s linear infinite;margin:0 auto 12px}
+@keyframes spin{to{transform:rotate(360deg)}}
+.spinner-wrap p{font-size:13px;color:#8B949E}
+.models-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:4px}
+.model-card{background:#21262D;border:1px solid #30363D;border-radius:10px;padding:16px;text-align:center;position:relative;margin-top:10px}
+.model-card.winner{border:2px solid #58A6FF;background:#1c2333}
+.best-badge{position:absolute;top:-10px;left:50%;transform:translateX(-50%);background:#1c2333;color:#58A6FF;font-size:11px;padding:2px 10px;border-radius:20px;border:1px solid #58A6FF;white-space:nowrap;display:flex;align-items:center;gap:4px}
+.model-name{font-size:11px;color:#8B949E;margin-bottom:10px}
+.model-pred{font-size:17px;font-weight:600;color:#E6EDF3;margin-bottom:6px}
+.model-conf{font-size:22px;font-weight:700;margin:8px 0}
+.conf-bar{height:6px;background:#30363D;border-radius:3px;overflow:hidden;margin-top:6px}
+.conf-fill{height:100%;border-radius:3px;transition:width .8s ease}
+.verdict-card{border-radius:12px;padding:26px;text-align:center;border:1px solid #238636;background:linear-gradient(135deg,#0d2818,#1a3a20);margin-bottom:16px}
+.verdict-card.danger{border-color:#da3633;background:linear-gradient(135deg,#2d0d0d,#3a1a1a)}
+.verdict-label{font-size:11px;color:#8B949E;text-transform:uppercase;letter-spacing:1.5px;margin-bottom:10px}
+.verdict-main{font-size:32px;font-weight:700;color:#7EE787;margin-bottom:6px;display:flex;align-items:center;justify-content:center;gap:10px}
+.verdict-card.danger .verdict-main{color:#FF7B72}
+.verdict-meta{font-size:13px;color:#8B949E;margin-bottom:16px}
+.pills{display:flex;justify-content:center;gap:8px;flex-wrap:wrap;margin-bottom:18px}
+.pill{background:#21262D;border:1px solid #30363D;border-radius:20px;padding:5px 14px;font-size:12px;color:#8B949E}
+.pill span{color:#E6EDF3;font-weight:600}
+.reset-btn{width:100%;padding:11px;background:transparent;border:1px solid #30363D;border-radius:8px;color:#8B949E;font-size:13px;cursor:pointer;transition:all .2s;display:flex;align-items:center;justify-content:center;gap:6px}
+.reset-btn:hover{border-color:#58A6FF;color:#58A6FF}
+#results-section{display:none}
+@media(max-width:600px){.models-grid{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+
+<header>
+  <h1>
+    <span class="brain-icon"><i class="ti ti-brain"></i></span>
+    Brain Tumor Classification System
+  </h1>
+  <p>Upload a brain MRI scan — 3 AI models will analyze it and vote on the best diagnosis</p>
+</header>
+
+<div class="container">
+
+  <div class="card" id="upload-card">
+    <div class="card-label"><i class="ti ti-upload"></i> Upload scan</div>
+    <div class="upload-zone">
+      <input type="file" id="file-input" accept="image/*" onchange="handleFile(this)"/>
+      <i class="ti ti-scan scan-icon"></i>
+      <h3>Drop your MRI image here</h3>
+      <p>or click to browse — JPG, PNG supported</p>
+    </div>
+    <div class="preview-wrap" id="preview-wrap">
+      <img id="preview-img" src="" alt="MRI preview"/>
+      <div class="preview-info">
+        <div class="preview-name" id="preview-name"></div>
+        <div class="preview-size" id="preview-size"></div>
+      </div>
+      <i class="ti ti-circle-check" style="font-size:20px;color:#7EE787"></i>
+    </div>
+  </div>
+
+  <button class="predict-btn" id="predict-btn" onclick="predict()" disabled>
+    <i class="ti ti-microscope"></i>
+    Classify MRI Scan
+  </button>
+
+  <div class="spinner-wrap" id="spinner">
+    <div class="spinner"></div>
+    <p>Analyzing with 3 AI models...</p>
+  </div>
+
+  <div id="results-section">
+    <div class="card">
+      <div class="card-label"><i class="ti ti-cpu"></i> Model results</div>
+      <div class="models-grid" id="models-grid"></div>
+    </div>
+    <div id="verdict-box"></div>
+    <button class="reset-btn" onclick="resetAll()">
+      <i class="ti ti-refresh"></i>
+      Analyze Another Image
+    </button>
+  </div>
+
+</div>
+
+<script>
+function handleFile(input) {
+  if (!input.files[0]) return;
+  const file = input.files[0];
+  const reader = new FileReader();
+  reader.onload = e => {
+    document.getElementById('preview-img').src = e.target.result;
+    document.getElementById('preview-name').textContent = file.name;
+    document.getElementById('preview-size').textContent = (file.size / 1024).toFixed(1) + ' KB';
+    document.getElementById('preview-wrap').style.display = 'flex';
+    document.getElementById('predict-btn').disabled = false;
+  };
+  reader.readAsDataURL(file);
+}
+
+function predict() {
+  const file = document.getElementById('file-input').files[0];
+  if (!file) return;
+  const formData = new FormData();
+  formData.append('file', file);
+
+  document.getElementById('spinner').style.display = 'block';
+  document.getElementById('results-section').style.display = 'none';
+  document.getElementById('predict-btn').disabled = true;
+
+  fetch('/predict', { method: 'POST', body: formData })
+    .then(r => r.json())
+    .then(data => {
+      document.getElementById('spinner').style.display = 'none';
+      document.getElementById('predict-btn').disabled = false;
+      renderResults(data);
+    })
+    .catch(err => {
+      document.getElementById('spinner').style.display = 'none';
+      document.getElementById('predict-btn').disabled = false;
+      alert('Error: ' + err);
+    });
+}
+
+function renderResults(data) {
+  document.getElementById('results-section').style.display = 'block';
+  const grid = document.getElementById('models-grid');
+  const verdictBox = document.getElementById('verdict-box');
+  const order = ['EfficientNetB0', 'MobileNetV2', 'ResNet50'];
+
+  if (!data.valid) {
+    grid.innerHTML = data.results ? order.map(name => {
+      const r = data.results[name];
+      const confColor = r.confidence >= 95 ? '#7EE787' : r.confidence >= 80 ? '#58A6FF' : '#FFA657';
+      return `<div class="model-card">
+        <div class="model-name">${name}</div>
+        <div class="model-pred">${r.prediction}</div>
+        <div class="model-conf" style="color:${confColor}">${r.confidence.toFixed(1)}%</div>
+        <div class="conf-bar">
+          <div class="conf-fill" style="width:${r.confidence.toFixed(0)}%;background:${confColor}"></div>
+        </div>
+      </div>`;
+    }).join('') : '';
+
+    verdictBox.innerHTML = `
+      <div class="verdict-card danger">
+        <div class="verdict-label">Scan validation</div>
+        <div class="verdict-main"><i class="ti ti-alert-triangle"></i> Not a valid MRI</div>
+        <div class="verdict-meta">${data.message}</div>
+      </div>`;
+    return;
+  }
+
+  grid.innerHTML = order.map(name => {
+    const r = data.results[name];
+    const isWinner = name === data.best_model;
+    const confColor = r.confidence >= 95 ? '#7EE787' : r.confidence >= 80 ? '#58A6FF' : '#FFA657';
+    return `<div class="model-card ${isWinner ? 'winner' : ''}">
+      ${isWinner ? '<div class="best-badge"><i class="ti ti-star"></i> Best model</div>' : ''}
+      <div class="model-name">${name}</div>
+      <div class="model-pred">${r.prediction}</div>
+      <div class="model-conf" style="color:${confColor}">${r.confidence.toFixed(1)}%</div>
+      <div class="conf-bar">
+        <div class="conf-fill" style="width:${r.confidence.toFixed(0)}%;background:${confColor}"></div>
+      </div>
+    </div>`;
+  }).join('');
+
+  verdictBox.innerHTML = `
+    <div class="verdict-card">
+      <div class="verdict-label">Final diagnosis — majority voting</div>
+      <div class="verdict-main"><i class="ti ti-stethoscope"></i> ${data.final_diagnosis}</div>
+      <div class="verdict-meta">Best model: ${data.best_model} &nbsp;·&nbsp; Confidence: ${data.best_confidence.toFixed(1)}% &nbsp;·&nbsp; Votes: ${data.votes}/3</div>
+      <div class="pills">
+        <div class="pill">Models <span>3</span></div>
+        <div class="pill">Method <span>Majority voting</span></div>
+        <div class="pill">Best model <span>${data.best_model}</span></div>
+        <div class="pill">Confidence <span>${data.best_confidence.toFixed(1)}%</span></div>
+      </div>
+    </div>`;
+}
+
+function resetAll() {
+  document.getElementById('results-section').style.display = 'none';
+  document.getElementById('preview-wrap').style.display = 'none';
+  document.getElementById('file-input').value = '';
+  document.getElementById('predict-btn').disabled = true;
+  document.getElementById('models-grid').innerHTML = '';
+  document.getElementById('verdict-box').innerHTML = '';
+}
+</script>
+</body>
+</html>
